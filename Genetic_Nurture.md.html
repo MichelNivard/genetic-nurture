@@ -465,6 +465,7 @@ summary {
 <li><a href="#review-the-results-in-the-absence-of-an-indirect-effect.">Review the results in the <strong>absence</strong> of an indirect effect.</a></li>
 <li><a href="#review-the-results-in-the-presence-of-an-indirect-effect.">Review the results in the <strong>presence</strong> of an indirect effect.</a></li>
 </ul></li>
+<li><a href="#estimateing-direct-and-indirect-effects-in-the-presence-of-population-stratification.">estimateing direct, and indirect, effects in the presence of population stratification.</a></li>
 <li><a href="#speculative-variations-extensions-and-comparisons.">Speculative variations, extensions and comparisons.</a></li>
 <li><a href="#literature">Literature</a></li>
 </ul>
@@ -485,6 +486,10 @@ summary {
 <pre class="r"><code># Make 100 effect sizes for the effect of 100 SNPs on 1 trait
 
 true_eff &lt;- rnorm(100)
+
+GWAS_eff &lt;- sqrt(.2)*true_eff + sqrt(.8)*rnorm(100)
+
+m.error &lt;- cor(GWAS_eff,true_eff)
 
 # maker true MAF's for 100 SNPs
 maf &lt;- runif(100,.1,.5)
@@ -551,28 +556,12 @@ adoptees &lt;- cbind(adoptees,adoptee)
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">2</td>
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="right">2</td>
-<td align="right">2</td>
-<td align="right">1</td>
-</tr>
-<tr class="even">
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
 <td align="right">0</td>
 <td align="right">1</td>
-<td align="right">1</td>
-<td align="right">0</td>
-<td align="right">1</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="right">0</td>
-<td align="right">2</td>
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="right">0</td>
@@ -580,27 +569,43 @@ adoptees &lt;- cbind(adoptees,adoptee)
 <td align="right">0</td>
 <td align="right">1</td>
 <td align="right">0</td>
-<td align="right">1</td>
+<td align="right">2</td>
 </tr>
 <tr class="odd">
 <td align="right">1</td>
 <td align="right">1</td>
-<td align="right">2</td>
 <td align="right">0</td>
-<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">2</td>
 <td align="right">1</td>
 </tr>
 <tr class="even">
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">2</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">2</td>
+<td align="right">1</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
 <td align="right">0</td>
 <td align="right">0</td>
+<td align="right">1</td>
 <td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">0</td>
+<td align="right">1</td>
 </tr>
 </tbody>
 </table>
-<p>I then multiply the risk allele count by the effect size and sum it to get a PRS. I use a matrix algebra shortcut to do this.</p>
+<p>I then multiply the risk allele count by the true effect size and sum it to get the genertic liability dot he same for the “GWAS” effect size to gat a PRS. I use a matrix algebra shortcut to do this.</p>
 <pre class="r"><code># multiply the beta and the SNPs and sum to a perfect PRS:
 mother_g &lt;- true_eff %*% t(mothers)
 father_g&lt;- true_eff %*% t(fathers)
@@ -616,8 +621,26 @@ father_g &lt;- scale(t(father_g))
 child_g &lt;- scale(t(child_g))
 ntc_g &lt;- scale(t(ntc_g))
 sib_g &lt;- scale(t(sib_g))
-adoptee_g &lt;- scale(t(adoptee_g))</code></pre>
-<p>We can check whether the correlations between the various PRS are as we expect based on theory (and they are):</p>
+adoptee_g &lt;- scale(t(adoptee_g))
+
+
+# multiply the beta and the SNPs and sum to a perfect PRS:
+mother_prs &lt;- GWAS_eff %*% t(mothers)
+father_prs&lt;- GWAS_eff %*% t(fathers)
+child_prs&lt;- GWAS_eff %*% t(children)
+ntc_prs &lt;-  GWAS_eff %*% t(ntc)
+sib_prs &lt;- GWAS_eff %*% t(sibs)
+adoptee_prs &lt;-  GWAS_eff %*% t(adoptees)
+
+
+#scale genetic scores:
+mother_prs &lt;- scale(t(mother_prs))
+father_prs &lt;- scale(t(father_prs))
+child_prs &lt;- scale(t(child_prs))
+ntc_prs &lt;- scale(t(ntc_prs))
+sib_prs &lt;- scale(t(sib_prs))
+adoptee_prs &lt;- scale(t(adoptee_prs))</code></pre>
+<p>We can check whether the correlations between the various “true” PRS are as we expect based on theory (and they are):</p>
 <pre class="r"><code># check whether everyone is related to eachother as expected:
 
 cors &lt;-cor(cbind(mother_g,father_g,child_g,ntc_g,sib_g,adoptee_g))
@@ -642,35 +665,35 @@ kable(round(cors,2))</code></pre>
 <tr class="odd">
 <td>mother</td>
 <td align="right">1.00</td>
-<td align="right">0.01</td>
-<td align="right">0.51</td>
+<td align="right">0.00</td>
 <td align="right">0.49</td>
+<td align="right">0.51</td>
 <td align="right">0.50</td>
-<td align="right">-0.01</td>
+<td align="right">0.00</td>
 </tr>
 <tr class="even">
 <td>father</td>
-<td align="right">0.01</td>
+<td align="right">0.00</td>
 <td align="right">1.00</td>
 <td align="right">0.51</td>
-<td align="right">0.52</td>
+<td align="right">0.50</td>
 <td align="right">0.51</td>
 <td align="right">-0.01</td>
 </tr>
 <tr class="odd">
 <td>child</td>
-<td align="right">0.51</td>
+<td align="right">0.49</td>
 <td align="right">0.51</td>
 <td align="right">1.00</td>
-<td align="right">0.02</td>
-<td align="right">0.51</td>
-<td align="right">-0.01</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
 </tr>
 <tr class="even">
 <td>non-transmitted</td>
-<td align="right">0.49</td>
-<td align="right">0.52</td>
-<td align="right">0.02</td>
+<td align="right">0.51</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
 <td align="right">1.00</td>
 <td align="right">0.50</td>
 <td align="right">-0.01</td>
@@ -679,16 +702,16 @@ kable(round(cors,2))</code></pre>
 <td>sibling</td>
 <td align="right">0.50</td>
 <td align="right">0.51</td>
-<td align="right">0.51</td>
+<td align="right">0.50</td>
 <td align="right">0.50</td>
 <td align="right">1.00</td>
 <td align="right">-0.01</td>
 </tr>
 <tr class="even">
 <td>adopted sib</td>
+<td align="right">0.00</td>
 <td align="right">-0.01</td>
-<td align="right">-0.01</td>
-<td align="right">-0.01</td>
+<td align="right">0.00</td>
 <td align="right">-0.01</td>
 <td align="right">-0.01</td>
 <td align="right">1.00</td>
@@ -711,8 +734,8 @@ adoptee_t1 &lt;- sqrt(.5)*adoptee_g + sqrt(.5)*rnorm(n) </code></pre>
 <h4>Simulating traits <strong>in the presence of</strong> an indirect effect</h4>
 <pre class="r"><code>### With indirect effects:
 
-mother_t2  &lt;- sqrt(.5)*mother_g  + sqrt(.7)*rnorm(n)
-father_t2  &lt;- sqrt(.5)*father_g  + sqrt(.7)*rnorm(n)
+mother_t2  &lt;- sqrt(.5)*mother_g  + sqrt(.5)*rnorm(n)
+father_t2  &lt;- sqrt(.5)*father_g  + sqrt(.5)*rnorm(n)
 child_t2   &lt;- sqrt(.5)*child_g   + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + sqrt(.3)*rnorm(n)  
 sib_t2     &lt;- sqrt(.5)*sib_g     + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + sqrt(.3)*rnorm(n)
 adoptee_t2 &lt;- sqrt(.5)*adoptee_g + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + sqrt(.3)*rnorm(n)</code></pre>
@@ -732,8 +755,8 @@ adoptee_t2 &lt;- sqrt(.5)*adoptee_g + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + 
 <p><span class="math display">\[phenotype = \beta_{t} * PRS_{t} +  \beta_{nt} * PRS_{nt} + e \]</span></p>
 <p>In R we can run this regression for both simualted phenotypes, for the phenotype without indirect effects (t1) and the phenotyped with indirect effecs (t2)</p>
 <pre class="r"><code># perform transmitted non-transmitted PRS analysis:
-kong_t1 &lt;- summary(lm(child_t1 ~ child_g + ntc_g))
-kong_t2 &lt;- summary(lm(child_t2 ~ child_g + ntc_g))</code></pre>
+kong_t1 &lt;- summary(lm(child_t1 ~ child_prs + ntc_prs))
+kong_t2 &lt;- summary(lm(child_t2 ~ child_prs + ntc_prs))</code></pre>
 <p>In the model as defined by <strong>Kong et al.</strong> the estimated direct effect are: <span class="math display">\[direct = \beta_{t} - \beta_{nt}\]</span></p>
 <pre class="r"><code>direct_kong_t1 &lt;- kong_t1$coef[2,1] - kong_t1$coef[3,1]
 direct_kong_t2 &lt;- kong_t2$coef[2,1] - kong_t2$coef[3,1]</code></pre>
@@ -747,8 +770,8 @@ indirect_kong_t2 &lt;- kong_t2$coef[3,1]</code></pre>
 <p><span class="math display">\[phenotype_{child} = \beta_{child} * PRS_{child} +  \beta_{mother} * PRS_{mother} +  \beta_{father} * PRS_{father}+ e\]</span></p>
 <p>We can estimate the model using the following code:</p>
 <pre class="r"><code># perform transmitted non-transmitted PRS analysis:
-conley_t1 &lt;- summary(lm(child_t1 ~ child_g + father_g + mother_g))
-conley_t2 &lt;- summary(lm(child_t2 ~ child_g + father_g + mother_g))</code></pre>
+conley_t1 &lt;- summary(lm(child_t1 ~ child_prs + father_prs + mother_prs))
+conley_t2 &lt;- summary(lm(child_t2 ~ child_prs + father_prs + mother_prs))</code></pre>
 <p>the direct effect and indirect effect are define as:</p>
 <p><span class="math display">\[direct = \beta_{child}\]</span></p>
 <pre class="r"><code>direct_conley_t1 &lt;- conley_t1$coef[2,1]
@@ -766,11 +789,11 @@ indirect_conley_t2 &lt;- .5*(conley_t2$coef[3,1] + conley_t2$coef[4,1])</code></
 <p><span class="math display">\[phenotype_{mother} = \beta_{own} * PRS_{mother} + e\]</span></p>
 <p><strong>OR</strong></p>
 <p><span class="math display">\[phenotype_{child} = \beta_{own} * PRS_{child} + e\]</span></p>
-<pre class="r"><code>warrington_t1_off &lt;- summary(lm(child_t1 ~ mother_g))
-warrington_t1_own &lt;- summary(lm(child_t1 ~ child_g))
+<pre class="r"><code>warrington_t1_off &lt;- summary(lm(child_t1 ~ mother_prs))
+warrington_t1_own &lt;- summary(lm(child_t1 ~ child_prs))
 
-warrington_t2_off &lt;- summary(lm(child_t2 ~ mother_g))
-warrington_t2_own &lt;- summary(lm(child_t2 ~ child_g))</code></pre>
+warrington_t2_off &lt;- summary(lm(child_t2 ~ mother_prs))
+warrington_t2_own &lt;- summary(lm(child_t2 ~ child_prs))</code></pre>
 <p>the direct effect and indirect effect are defined as:</p>
 <p><span class="math display">\[direct = beta_{own} - (2*\beta_{offspring} - \beta_{own})\]</span></p>
 <pre class="r"><code>direct_warrington_t1 &lt;- (warrington_t1_own$coef[2,1] - 
@@ -790,8 +813,8 @@ indirect_warrington_t2 &lt;-  (2*warrington_t2_off$coef[2,1] - warrington_t2_own
 <p><span class="math display">\[between = .5*(PRS_{child} + PRS_{sibling})\]</span></p>
 <p><span class="math display">\[within = PRS_{child} - between\]</span> <span class="math display">\[phenotype_{child} = \beta_{within}*within + \beta_{between}*between + u + e\]</span></p>
 <pre class="r"><code># perform sib PRS analysis:
-between &lt;- .5*(child_g + sib_g)
-within &lt;- child_g - between
+between &lt;- .5*(child_prs + sib_prs)
+within &lt;- child_prs - between
 
 selzam_t1 &lt;- summary(lm(child_t1 ~ between + within))
 selzam_t2 &lt;- summary(lm(child_t2 ~ between + within))</code></pre>
@@ -812,11 +835,11 @@ indirect_selzam_t2 &lt;- .75*(selzam_t2$coef[2,1]-selzam_t2$coef[3,1])</code></p
 <p><span class="math display">\[phenotype_{adoptee} = beta_{adoptee} * PRS_{adoptee} + e\]</span></p>
 <p><span class="math display">\[phenotype_{biological-child} = beta_{biological-child} * PRS_{biological-child} + e\]</span></p>
 <pre class="r"><code># perform adoption PRS analysis:
-cheesman_t1_adopt &lt;- summary(lm(adoptee_t1 ~ adoptee_g ))
-cheesman_t1_bio &lt;- summary(lm(child_t1 ~ child_g ))
+cheesman_t1_adopt &lt;- summary(lm(adoptee_t1 ~ adoptee_prs ))
+cheesman_t1_bio &lt;- summary(lm(child_t1 ~ child_prs ))
 
-cheesman_t2_adopt &lt;- summary(lm(adoptee_t2 ~ adoptee_g ))
-cheesman_t2_bio &lt;- summary(lm(child_t2 ~ child_g ))</code></pre>
+cheesman_t2_adopt &lt;- summary(lm(adoptee_t2 ~ adoptee_prs ))
+cheesman_t2_bio &lt;- summary(lm(child_t2 ~ child_prs ))</code></pre>
 <p>And the direct and indirect effects are defined as:</p>
 <p><span class="math display">\[direct = \beta_{adoptee}\]</span></p>
 <pre class="r"><code>direct_cheesman_t1 &lt;- cheesman_t1_adopt$coef[2,1]
@@ -831,11 +854,11 @@ indirect_cheesman_t2 &lt;- cheesman_t2_bio$coef[2,1] - cheesman_t2_adopt$coef[2,
 <p><span class="math display">\[phenotype_{adoptee} = beta_{adoption} * PRS_{rearing-parent} + e\]</span></p>
 <p><span class="math display">\[phenotype_{biological-child} = beta_{biological} * PRS_{rearing-parent} + e\]</span></p>
 <pre class="r"><code># perform adoption PRS analysis:
-domingue_t1_adop_offs &lt;- summary(lm(adoptee_t1 ~ father_g ))
-domingue_t1_bio_offs &lt;- summary(lm(child_t1 ~ father_g ))
+domingue_t1_adop_offs &lt;- summary(lm(adoptee_t1 ~ father_prs ))
+domingue_t1_bio_offs &lt;- summary(lm(child_t1 ~ father_prs ))
 
-domingue_t2_adop_offs &lt;- summary(lm(adoptee_t2 ~ father_g ))
-domingue_t2_bio_offs &lt;- summary(lm(child_t2 ~ father_g ))</code></pre>
+domingue_t2_adop_offs &lt;- summary(lm(adoptee_t2 ~ father_prs ))
+domingue_t2_bio_offs &lt;- summary(lm(child_t2 ~ father_prs ))</code></pre>
 <p>And the direct and indirect effects are defined as:</p>
 <p><span class="math display">\[direct =  2*(beta_{biological} - \beta_{adoption}) \]</span></p>
 <pre class="r"><code>direct_domingue_t1 &lt;- 2*(domingue_t1_bio_offs$coef[2,1]-domingue_t1_adop_offs$coef[2,1])
@@ -851,7 +874,7 @@ indirect_domingue_t2 &lt;- domingue_t2_adop_offs$coef[2,1]</code></pre>
 <div id="review-the-results-in-the-absence-of-an-indirect-effect." class="section level3">
 <h3>Review the results in the <strong>absence</strong> of an indirect effect.</h3>
 <p>We cooelct all direct and indirect effect estimates, and the true effect as specified in the simulation, in a single object so we can esily compare the results.</p>
-<pre class="r"><code>direct_effects &lt;- c(sqrt(.5),
+<pre class="r"><code>direct_effects &lt;- c(m.error*sqrt(.5),
                     direct_kong_t1,
                     direct_conley_t1,
                     direct_warrington_t1,
@@ -886,38 +909,38 @@ kable(tab)</code></pre>
 <tbody>
 <tr class="odd">
 <td>Truth</td>
-<td align="right">0.707</td>
+<td align="right">0.255</td>
 <td align="right">0.000</td>
 </tr>
 <tr class="even">
 <td>Kong et al.</td>
-<td align="right">0.702</td>
-<td align="right">0.010</td>
-</tr>
-<tr class="odd">
-<td>Conley et al.</td>
-<td align="right">0.702</td>
-<td align="right">0.010</td>
-</tr>
-<tr class="even">
-<td>Warrington et al.</td>
-<td align="right">0.699</td>
+<td align="right">0.246</td>
 <td align="right">0.013</td>
 </tr>
 <tr class="odd">
+<td>Conley et al.</td>
+<td align="right">0.246</td>
+<td align="right">0.013</td>
+</tr>
+<tr class="even">
+<td>Warrington et al.</td>
+<td align="right">0.243</td>
+<td align="right">0.016</td>
+</tr>
+<tr class="odd">
 <td>Selzam et al.</td>
-<td align="right">0.722</td>
-<td align="right">-0.011</td>
+<td align="right">0.229</td>
+<td align="right">0.030</td>
 </tr>
 <tr class="even">
 <td>Cheesman et al.</td>
-<td align="right">0.712</td>
-<td align="right">0.000</td>
+<td align="right">0.259</td>
+<td align="right">-0.001</td>
 </tr>
 <tr class="odd">
 <td>Domingue &amp; Fletcher</td>
-<td align="right">0.766</td>
-<td align="right">-0.014</td>
+<td align="right">0.292</td>
+<td align="right">-0.010</td>
 </tr>
 </tbody>
 </table>
@@ -925,7 +948,7 @@ kable(tab)</code></pre>
 <div id="review-the-results-in-the-presence-of-an-indirect-effect." class="section level3">
 <h3>Review the results in the <strong>presence</strong> of an indirect effect.</h3>
 <p>We cooelct all direct and indirect effect estimates, and the true effect as specified in the simulation, in a single object so we can esily compare the results.</p>
-<pre class="r"><code>direct_effects &lt;- c(sqrt(.5),
+<pre class="r"><code>direct_effects &lt;- c(m.error*sqrt(.5),
                     direct_kong_t2,
                     direct_conley_t2,
                     direct_warrington_t2,
@@ -934,7 +957,7 @@ kable(tab)</code></pre>
                     direct_domingue_t2
                     )</code></pre>
 <p>Then I compute the indirect effects some authors are explicit about how this is done, others aren’t in which case I determined how to compute it myself:</p>
-<pre class="r"><code>indirect_effects &lt;- c(sqrt(.1)*sqrt(.5),
+<pre class="r"><code>indirect_effects &lt;- c(m.error*sqrt(.1)*sqrt(.5),
                     indirect_kong_t2,
                     indirect_conley_t2,
                     indirect_warrington_t2,
@@ -961,42 +984,139 @@ kable(tab)</code></pre>
 <tbody>
 <tr class="odd">
 <td>Truth</td>
-<td align="right">0.707</td>
-<td align="right">0.224</td>
+<td align="right">0.255</td>
+<td align="right">0.081</td>
 </tr>
 <tr class="even">
 <td>Kong et al.</td>
-<td align="right">0.703</td>
-<td align="right">0.223</td>
+<td align="right">0.261</td>
+<td align="right">0.084</td>
 </tr>
 <tr class="odd">
 <td>Conley et al.</td>
-<td align="right">0.704</td>
-<td align="right">0.224</td>
+<td align="right">0.260</td>
+<td align="right">0.084</td>
 </tr>
 <tr class="even">
 <td>Warrington et al.</td>
-<td align="right">0.690</td>
-<td align="right">0.240</td>
+<td align="right">0.262</td>
+<td align="right">0.083</td>
 </tr>
 <tr class="odd">
 <td>Selzam et al.</td>
-<td align="right">0.714</td>
-<td align="right">0.216</td>
+<td align="right">0.256</td>
+<td align="right">0.089</td>
 </tr>
 <tr class="even">
 <td>Cheesman et al.</td>
-<td align="right">0.700</td>
-<td align="right">0.231</td>
+<td align="right">0.246</td>
+<td align="right">0.099</td>
 </tr>
 <tr class="odd">
 <td>Domingue &amp; Fletcher</td>
-<td align="right">0.732</td>
-<td align="right">0.215</td>
+<td align="right">0.292</td>
+<td align="right">0.071</td>
 </tr>
 </tbody>
 </table>
 </div>
+</div>
+<div id="estimateing-direct-and-indirect-effects-in-the-presence-of-population-stratification." class="section level2">
+<h2>estimateing direct, and indirect, effects in the presence of population stratification.</h2>
+<pre class="r"><code># Make 100 effect sizes for the effect of 100 SNPs on 1 trait
+
+true_eff &lt;- rnorm(100)
+
+GWAS_eff &lt;- true_eff + rnorm(100)
+
+cor(GWAS_eff,true_eff)</code></pre>
+<pre><code>## [1] 0.673161</code></pre>
+<pre class="r"><code># maker true MAF's for 100 SNPs
+maf &lt;- runif(100,.1,.5)
+
+# make bi-alleic SNP calls from 100 SNPs in 10000 mothers, 10000 fathers
+# and their kids, a non-transmitted PRS and an adopted kid
+n &lt;- 10000
+
+# make the first &quot;SNP&quot; for n people:
+mothers &lt;-  rbinom(n,size = 2,prob = maf[1])
+fathers &lt;-  rbinom(n,size = 2,prob = maf[1])
+# make child &amp; non -transmitted allele:
+ft &lt;- rbinom(n,size = 1,prob = fathers/2)
+mt &lt;- rbinom(n,size = 1,prob = mothers/2)
+children &lt;- ft + mt
+ntc &lt;- (fathers - ft) + (mothers- mt) 
+
+# make some sibs (for sib design)
+ft &lt;- rbinom(n,size = 1,prob = fathers/2)
+mt &lt;- rbinom(n,size = 1,prob = mothers/2)
+sibs &lt;- ft + mt
+
+# Make some adoptees (i.e drawn fully independently from the rest):
+adoptees  &lt;- rbinom(n,size = 2,prob = maf[1])
+
+# make SNP 2 to 100:
+for(i in 2:100){ 
+
+mother &lt;- rbinom(n,size = 2,prob = maf[i])
+father &lt;- rbinom(n,size = 2,prob = maf[i])
+ft &lt;- rbinom(n,size = 1,prob = father/2) # draw 1 allele fromt he father
+mt &lt;- rbinom(n,size = 1,prob = mother/2) # draw 1 allele form the mother
+child  &lt;- ft + mt # make the child SNP
+nt &lt;- (father - ft) + (mother- mt) # make the non-transmitted genotype 
+
+mothers &lt;- cbind(mothers,mother) # add SNP to file
+fathers &lt;- cbind(fathers,father)
+children &lt;- cbind(children,child)
+ntc &lt;- cbind(ntc,nt)
+
+# For the sib design, make a SNP for a second child:
+ft &lt;- rbinom(n,size = 1,prob = father/2)
+mt &lt;- rbinom(n,size = 1,prob = mother/2)
+sib  &lt;- ft + mt
+
+sibs &lt;- cbind(sibs,sib) # add the the data
+
+# For the adoptee design make a SNP for the adoptee:
+adoptee  &lt;- rbinom(n,size = 2,prob = maf[i])
+adoptees &lt;- cbind(adoptees,adoptee)
+}</code></pre>
+<p>I then multiply the risk allele count by the effect size and sum it to get a PRS. I use a matrix algebra shortcut to do this.</p>
+<pre class="r"><code># multiply the beta and the SNPs and sum to a perfect PRS:
+# multiply the beta and the SNPs and sum to a perfect PRS:
+mother_g &lt;- true_eff %*% t(mothers)
+father_g&lt;- true_eff %*% t(fathers)
+child_g&lt;- true_eff %*% t(children)
+ntc_g &lt;-  true_eff %*% t(ntc)
+sib_g &lt;- true_eff %*% t(sibs)
+adoptee_g &lt;-  true_eff %*% t(adoptees)
+
+
+#scale genetic scores:
+mother_g &lt;- scale(t(mother_g))
+father_g &lt;- scale(t(father_g))
+child_g &lt;- scale(t(child_g))
+ntc_g &lt;- scale(t(ntc_g))
+sib_g &lt;- scale(t(sib_g))
+adoptee_g &lt;- scale(t(adoptee_g))
+
+
+# multiply the beta and the SNPs and sum to a perfect PRS:
+mother_ors &lt;- GWAS_eff %*% t(mothers)
+father_prs&lt;- GWAS_eff %*% t(fathers)
+child_prs&lt;- GWAS_eff %*% t(children)
+ntc_prs &lt;-  GWAS_eff %*% t(ntc)
+sib_prs &lt;- GWAS_eff %*% t(sibs)
+adoptee_prs &lt;-  GWAS_eff %*% t(adoptees)
+
+
+#scale genetic scores:
+mother_prs &lt;- scale(t(mother_prs))
+father_prs &lt;- scale(t(father_prs))
+child_prs &lt;- scale(t(child_prs))
+ntc_prs &lt;- scale(t(ntc_prs))
+sib_prs &lt;- scale(t(sib_prs))
+adoptee_prs &lt;- scale(t(adoptee_prs))</code></pre>
 </div>
 <div id="speculative-variations-extensions-and-comparisons." class="section level2">
 <h2>Speculative variations, extensions and comparisons.</h2>
