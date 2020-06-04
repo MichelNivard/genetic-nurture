@@ -528,29 +528,28 @@ kable(tab)
 We can now (re) use the PRS, add some environmental effect (50/50) and explore different scenario’s the first scenario is one where there is only a direct genetic effect and no indirect genetic effects. All designs should retrieve only a direct genetic effect of the simulated magnitude.
 
 ```{r }
+
+### Make the residual vairance correlate to the genetic liability:
+
+
+pop <- scale(rep(0,8000),rep(1,2000))
+
+mother_e <- sqrt(2)*pop + sqrt(.8)*rnorm(n)
+father_e <- sqrt(.2)*pop + sqrt(.8)*rnorm(n)
+child_e <- sqrt(.2)*pop + sqrt(.8)*rnorm(n)
+sib_e <-   sqrt(.2)*pop + sqrt(.8)*rnorm(n)
+adoptee_e <- sqrt(.2)*pop + sqrt(.8)*rnorm(n)
+
 ### No indirect effects:
 
-mother_t1 <- sqrt(.5)*mother_g + sqrt(.5)*rnorm(n)
-father_t1 <- sqrt(.5)*father_g + sqrt(.5)*rnorm(n)
-child_t1 <- sqrt(.5)*child_g + sqrt(.5)*rnorm(n)
-sib_t1 <- sqrt(.5)*sib_g + sqrt(.5)*rnorm(n)
-adoptee_t1 <- sqrt(.5)*adoptee_g + sqrt(.5)*rnorm(n)
+mother_t1 <- sqrt(.5)*mother_g + sqrt(.5)*mother_e
+father_t1 <- sqrt(.5)*father_g + sqrt(.5)*father_e
+child_t1 <- sqrt(.5)*child_g + sqrt(.5)*child_e
+sib_t1 <- sqrt(.5)*sib_g + sqrt(.5)*sib_e
+adoptee_t1 <- sqrt(.5)*adoptee_g + sqrt(.5)*adoptee_e
 
 
-## add a bit of pop-strat effect to the last 1000 Individuals 
 
-mother_t1 <- mother_t1 + c(rep(0,9000),rep(2,1000))
-father_t1 <- father_t1+ c(rep(0,9000),rep(2,1000))
-child_t1 <- child_t1+ c(rep(0,9000),rep(2,1000))
-sib_t1 <- sib_t1+ c(rep(0,9000),rep(2,1000))
-adoptee_t1 <- adoptee_t1+ c(rep(0,9000),rep(2,1000))
-
-## add the same pop-strat to the PRS:
-mother_prs <- mother_prs + c(rep(0,9000),rep(1,1000))
-father_prs <- father_prs+ c(rep(0,9000),rep(1,1000))
-child_prs <- child_prs+ c(rep(0,9000),rep(1,1000))
-sib_prs <- sib_prs+ c(rep(0,9000),rep(1,1000))
-adoptee_prs <- adoptee_prs+ c(rep(0,9000),rep(1,1000))
 
 
 ```
@@ -563,19 +562,15 @@ adoptee_prs <- adoptee_prs+ c(rep(0,9000),rep(1,1000))
 ```{r }
 ### With indirect effects:
 
-mother_t2  <- sqrt(.5)*mother_g  + sqrt(.5)*rnorm(n)
-father_t2  <- sqrt(.5)*father_g  + sqrt(.5)*rnorm(n)
-child_t2   <- sqrt(.5)*child_g   + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + sqrt(.3)*rnorm(n)  
-sib_t2     <- sqrt(.5)*sib_g     + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + sqrt(.3)*rnorm(n)
-adoptee_t2 <- sqrt(.5)*adoptee_g + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + sqrt(.3)*rnorm(n)
 
-## add a bit of pop-strat effect to the last 1000 Individuals 
 
-mother_t2 <- mother_t2 + c(rep(0,9000),rep(2,1000))
-father_t2 <- father_t2+ c(rep(0,9000),rep(2,1000))
-child_t2 <- child_t2+ c(rep(0,9000),rep(2,1000))
-sib_t2 <- sib_t2+ c(rep(0,9000),rep(2,1000))
-adoptee_t2 <- adoptee_t2+ c(rep(0,9000),rep(2,1000))
+
+mother_t2  <- sqrt(.5)*mother_g  + sqrt(.5)*mother_e
+father_t2  <- sqrt(.5)*father_g  + sqrt(.5)*father_e
+child_t2   <- sqrt(.5)*child_g   + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + sqrt(.3)*child_e  
+sib_t2     <- sqrt(.5)*sib_g     + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + sqrt(.3)*sib_e
+adoptee_t2 <- sqrt(.5)*adoptee_g + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + sqrt(.3)*adoptee_e
+
 
 ```
 
