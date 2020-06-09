@@ -3,11 +3,11 @@ title: "Genetic Nurture: statistical designs and practical estimation"
 author: "Perline Demange & Michel G Nivard"
 date: "`r format(Sys.time(), '%A %dth of  %B, %Y')`"
 output:
-  html_document:  
-    code_folding: show
+  pdf_document: 
     toc: true
     toc_depth: 4
-  pdf_document: 
+  html_document:  
+    code_folding: show
     toc: true
     toc_depth: 4
 ---
@@ -16,6 +16,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 library(knitr)
 ```
+
+\newpage 
 
 ## Genetic Nurture
 
