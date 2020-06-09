@@ -3,11 +3,11 @@ title: "Genetic Nurture: statistical designs and practical estimation"
 author: "Perline Demange & Michel G Nivard"
 date: "`r format(Sys.time(), '%A %dth of  %B, %Y')`"
 output:
-  pdf_document: 
-    toc: true
-    toc_depth: 4
   html_document:  
     code_folding: show
+    toc: true
+    toc_depth: 4
+  pdf_document: 
     toc: true
     toc_depth: 4
 ---
@@ -21,9 +21,9 @@ library(knitr)
 
 ## Genetic Nurture
 
-There has been a recent interest in estimating the influence of direct genetic effects (my genome influences my outcomes in life), and indirect genetic effect (the genome of my parents and/or siblings influence my outcomes in life) on complex traits using polygenic risk scores (PRS) and data of first-degree relatives and/or adopted children. The indirect effect is sometimes described as “Genetic Nurture” a term which implies a process active child rearing or “Dynastic effects” a term which implies an economic process where the inter-generational transmission of wealth and power. Because your genome, and that of your parents are correlated, the presence of an indirect genetic effect the presence of gene-environment correlation. There are several ways to estimate the direct genetic effect accounting for the possible presence of an indirect genetic effect. 
+There has been a recent interest in estimating the influence of direct genetic effects (my genome influences my outcomes in life), and indirect genetic effect (the genome of my parents and/or siblings influence my outcomes in life) on complex traits using polygenic risk scores (PRS) and data of first-degree relatives and/or adopted children. The indirect effect is sometimes described as “Genetic Nurture” a term which implies a process active child rearing or “Dynastic effects” a term which implies an economic process with the inter-generational transmission of wealth and power. Because your genome, and that of your parents are correlated, the presence of an indirect genetic effect reveals the presence of gene-environment correlation. There are several ways to estimate the direct genetic effect accounting for the possible presence of an indirect genetic effect. 
 
-Here we document existing designs, and designs inspired by previous work which we adapted slightly. We do so by proving and discussing the regression equations used to fit each design and the estimates of the direct and indirect effect.We directly apply each design to simulated data so the reader can follow along. Each of the designs relies on either biological or adopted relatives, and either directly in a model, or by comparison across models, corrects a PRS analysis for the fact that parents may influence the outcome in their child, and in the case of biological children the parent and offspring PRS are correlated.  
+Here we document existing designs, and designs inspired by previous work which we adapted slightly. We do so by proving and discussing the regression equations used to fit each design and the estimates of the direct and indirect effect. We directly apply each design to simulated data so the reader can follow along. Each of the designs relies on either biological or adopted relatives, and either directly in a model, or by comparison across models, corrects a PRS analysis for the fact that parents may influence the outcome in their child, and in the case of biological children the parent and offspring PRS are correlated.  
 
 ## The simulation  
 
@@ -33,7 +33,7 @@ We also simulate 100 effect sizes, and compute the PRS based on these effect siz
 
 #### Simulating the genetic data set
 
-We sample true effects for the 100 SNPs on the phenotype from a standard normal distribution. We sample minor allele frequencies from a uniform distribution between .1 and .5. We set the sample size to 10000. Then, we sample SNP 1 for mother, father, and from the mother and father sample a child. I immediately create the non-transmitted genotype (i.e. the genotype that was NOT transmitted to the child). We then sample a sibling, and an adopted sibling. Having created the first SNP, then a loop creates SNP 2 to 100 and append these to the genotype data set. The data set contains for each person (n = 10000) the number of risk alleles (coded 0/1/2) for 100 SNPs.
+We sample true effects for the 100 SNPs on the phenotype from a standard normal distribution. We sample minor allele frequencies from a uniform distribution between .1 and .5. We set the sample size to 10000. Then, we sample SNP 1 for mother, father, and from the mother and father we sample a child. We immediately create the non-transmitted genotype (i.e. the genotype that was NOT transmitted to the child). We then sample a sibling, and an adopted sibling. Having created the first SNP, then a loop creates SNP 2 to 100 and append these to the genotype data set. The data set contains for each person (n = 10000) the number of risk alleles (coded 0/1/2) for 100 SNPs.
 
 ```{r dataset}
 
@@ -46,17 +46,17 @@ GWAS_eff <- sqrt(.2)*true_eff + sqrt(.8)*rnorm(100)
 
 m.error <- cor(GWAS_eff,true_eff)
 
-# maker true MAF's for 100 SNPs
+# make true MAF's for 100 SNPs
 maf <- runif(100,.1,.5)
 
-# make bi-alleic SNP calls from 100 SNPs in 10000 mothers, 10000 fathers
+# make bi-allelic SNP calls from 100 SNPs in 10000 mothers, 10000 fathers
 # and their kids, a non-transmitted PRS and an adopted kid
 n <- 10000
 
 # make the first "SNP" for n people:
 mothers <-  rbinom(n,size = 2,prob = maf[1])
 fathers <-  rbinom(n,size = 2,prob = maf[1])
-# make child & non -transmitted allele:
+# make child & non-transmitted allele:
 ft <- rbinom(n,size = 1,prob = fathers/2)
 mt <- rbinom(n,size = 1,prob = mothers/2)
 children <- ft + mt
@@ -75,8 +75,8 @@ for(i in 2:100){
 
 mother <- rbinom(n,size = 2,prob = maf[i])
 father <- rbinom(n,size = 2,prob = maf[i])
-ft <- rbinom(n,size = 1,prob = father/2) # draw 1 allele fromt he father
-mt <- rbinom(n,size = 1,prob = mother/2) # draw 1 allele form the mother
+ft <- rbinom(n,size = 1,prob = father/2) # draw 1 allele from the father
+mt <- rbinom(n,size = 1,prob = mother/2) # draw 1 allele from the mother
 child  <- ft + mt # make the child SNP
 nt <- (father - ft) + (mother- mt) # make the non-transmitted genotype 
 
@@ -90,7 +90,7 @@ ft <- rbinom(n,size = 1,prob = father/2)
 mt <- rbinom(n,size = 1,prob = mother/2)
 sib  <- ft + mt
 
-sibs <- cbind(sibs,sib) # add the the data
+sibs <- cbind(sibs,sib) # add the data
 
 # For the adoptee design make a SNP for the adoptee:
 adoptee  <- rbinom(n,size = 2,prob = maf[i])
@@ -105,7 +105,7 @@ Lets have a look at the first 5 lines of the data set for a single SNP:
 kable(head(cbind(mother,father,child,nt,sib,adoptee)))
 ```
 
-We then multiply the risk allele count by the true effect size and sum it to get the genetic liability (sub g or `_g`), we do the same for the "GWAS" effect size to gat a PRS (sub prs or `_prs`). We use a matrix algebra to ompute the scores.
+We then multiply the risk allele count by the true effect size and sum it to get the genetic liability (sub g or `_g`), we do the same for the "GWAS" effect size to get a PRS (sub prs or `_prs`). We use a matrix algebra to compute the scores.
 
 ```{r scores}
 # multiply the beta and the SNPs and sum to a perfect PRS:
@@ -117,7 +117,7 @@ sib_g <- true_eff %*% t(sibs)
 adoptee_g <-  true_eff %*% t(adoptees)
 
 
-#scale genetic scores:
+# scale genetic scores:
 mother_g <- scale(t(mother_g))
 father_g <- scale(t(father_g))
 child_g <- scale(t(child_g))
@@ -126,7 +126,7 @@ sib_g <- scale(t(sib_g))
 adoptee_g <- scale(t(adoptee_g))
 
 
-# multiply the beta and the SNPs and sum to a perfect PRS:
+# multiply the beta and the SNPs and sum to a PRS:
 mother_prs <- GWAS_eff %*% t(mothers)
 father_prs<- GWAS_eff %*% t(fathers)
 child_prs<- GWAS_eff %*% t(children)
@@ -135,7 +135,7 @@ sib_prs <- GWAS_eff %*% t(sibs)
 adoptee_prs <-  GWAS_eff %*% t(adoptees)
 
 
-#scale genetic scores:
+# scale genetic scores:
 mother_prs <- scale(t(mother_prs))
 father_prs <- scale(t(father_prs))
 child_prs <- scale(t(child_prs))
@@ -148,7 +148,7 @@ adoptee_prs <- scale(t(adoptee_prs))
 We can check whether the correlations between the various "true" PRS are as we expect based on theory (and they are):
 
 ```{r check scores}
-# check whether everyone is related to eachother as expected:
+# check whether everyone is related to each other as expected:
 
 cors <-cor(cbind(mother_g,father_g,child_g,ntc_g,sib_g,adoptee_g))
 rownames(cors) <-  c("mother","father","child","non-transmitted",
@@ -160,7 +160,7 @@ kable(round(cors,2))
 
 #### Simulating traits **in absence of** any indirect effect
 
-We can now (re) use the PRS, add some environmental effect (50/50) and explore different scenario’s the first scenario is one where there is only a direct genetic effect and no indirect genetic effects. All designs should retrieve only a direct genetic effect of the simulated magnitude.
+We can now (re) use the PRS, add some environmental effect (50/50) and explore different scenarios. The first scenario is one where there is only a direct genetic effect and no indirect genetic effects. All designs should retrieve only a direct genetic effect of the simulated magnitude.
 
 ```{r Make traits no indirect}
 ### No indirect effects:
@@ -190,25 +190,25 @@ adoptee_t2 <- sqrt(.5)*adoptee_g + sqrt(.1)*mother_t2 + sqrt(.1)*father_t2 + sqr
 
 ## Estimating (in)direct genetic effects
 
-We review and discuss a number of design that aim to estimate the direct and indirect genetic effect. We explain the intuition behind the designs, and explicate how they estimate the direct and indirect genetic effects. 
+We review and discuss a number of design that aim to estimate the direct and indirect genetic effect. We explain the intuition behind the designs, and how they estimate the direct and indirect genetic effects. 
 
-The designs can be  grouped into 3 broad catagories, first there are those designs that relie on **genotyped parents and their biological offspring**. Two of these, the model propose by **Kong et al. (2018)** and the model inspired by **Conley et al. (2015)** require both parents and the offspring be genotyped, which the offspring must be phenotyped, the third model inspired by innovative work by **Warrington et al. (2018)** can be estimated using far less data: The model can be estiated if a parental genotype, a parental phenotype and offspring phenotype are available. The model can also be estimated when 1 parental and offspring genotypes and offspring phenotype are available. When relying on a single parental genotype, and this genotype is always the maternal or paternal genotype, the assumption must be made the indirect effect is equal for both parents, or absent for the parent that isn't availble. For maternity related variables such as birthweight one could probably savely assume the maternal indirect effect is far bigger than the paternal indirect effect. 
+The designs can be  grouped into 3 broad categories. First there are designs that relie on **genotyped parents and their biological offspring**. Two of these, the model proposed by **Kong et al. (2018)** and the model inspired by **Conley et al. (2015)** require both parents and the offspring to be genotyped, and the offspring to be phenotyped. A third model inspired by innovative work by **Warrington et al. (2018)** can be estimated using far less data: the model can be estimated if a parental genotype, a parental phenotype and offspring phenotype are available. The model can also be estimated when 1 parental and offspring genotypes and offspring phenotype are available. When relying on a single parental genotype, this genotype is always the maternal or paternal genotype. Therefore we must assume the indirect effect to be equal for both parents, or absent for the parent that isn't available. For maternity related variables such as birthweight one could probably safely assume the maternal indirect effect is far bigger than the paternal indirect effect. 
 
-The second broad catagory of designs relies on siblings where both siblings are gneotyped and phenotypes. The design, applied to PRS by **Selzam et al. (2018)** leverages the fact that within sibship analysis nutralizes all betwene sibling effect (among which are the effects on parent on their offspring).
+The second broad catagory of designs relies on siblings where both siblings are genotyped and phenotyped. The design, applied to PRS by **Selzam et al. (2018)** leverages the fact that within-sibship analysis neutralizes all between-sibling effect (among which are the effects of parents on their offspring).
 
-The third broad catagory of models relies on the contrast between an adoption relation and a biological relation between parents and offspring. In the design proposed by **Cheesman et al. (2018)**  the predictino of a PRS in adopteed and those that are raised by biological relatives are compared whereas in **Domingue et al. (2020)** the relation betwene a parental PRS and the phenotype in either adopted or biological offspirng are contrasted. 
+The third broad category of models relies on the contrast between an adoption relation and a biological relation between parents and offspring. In the design proposed by **Cheesman et al. (2018)**  the prediction of a PRS in adoptees and those raised by biological relatives are compared whereas in **Domingue et al. (2020)** the relation betwen a parental PRS and the phenotype in either adopted or biological offspring are contrasted. 
 
 ### Genotyped parents and offpring
 
 #### Model used in Kong et al.  
 
-The design presented in **Kong et al. (2018)** uses genotyped offspring and parents to compute the offspring PRS, and a PRS based on the parental allele’s that weren’t transmitted to the child. The intuition behind the design is that in the absence of indirect effect, the non-transmitted allele’s should not relate to the offspring outcome.  
+The design presented in **Kong et al. (2018)** uses genotyped offspring and parents to compute the offspring PRS, and a PRS based on the parental alleles that weren’t transmitted to the child. The intuition behind the design is that in the absence of indirect effect, the non-transmitted alleles should not relate to the offspring outcome.  
 
 
 
 $$phenotype = \beta_{t} * PRS_{t} +  \beta_{nt} * PRS_{nt} + e $$
 
-In R we can run this regression for both simualted phenotypes, for the phenotype without indirect effects (t1) and the phenotyped with indirect effecs (t2)
+In R we can run this regression for both simulated phenotypes, for the phenotype without indirect effects (t1) and the phenotyped with indirect effects (t2).
 
 ```{r}
 # perform transmitted non-transmitted PRS analysis:
@@ -235,7 +235,7 @@ indirect_kong_t2 <- kong_t2$coef[3,1]
 
 #### Model inspired by Conley et al.
 
-A design discussed and applied in **Conley et al. (2015)** is to condition a phenotype on the child's PRS and the parental PRS (one parent or both). We take the liberlty to extend on it a bit, and include both maternal and paternal PRS. 
+A design discussed and applied in **Conley et al. (2015)** is to condition a phenotype on the child's PRS and the parental PRS (one parent or both). We take the liberty to extend it to include both maternal and paternal PRS. 
 
 
 $$phenotype_{child} = \beta_{child} * PRS_{child} +  \beta_{mother} * PRS_{mother} +  \beta_{father} * PRS_{father}+ e$$
@@ -250,7 +250,7 @@ conley_t2 <- summary(lm(child_t2 ~ child_prs + father_prs + mother_prs))
 ``` 
 
 
-the direct effect and indirect effect are define as:
+The direct effect and indirect effect are defined as:
 
 $$direct = \beta_{child}$$
 
@@ -267,10 +267,10 @@ indirect_conley_t2 <- .5*(conley_t2$coef[3,1] + conley_t2$coef[4,1])
 
 #### Model inspired by Warrington et al.
 
-In the context of GWAS a close cousin of this design has been appied to Birthweight revealing specific maternal and offspring effects on birthweight (**Warrington et al., 2018**). Here we restrict ourself to discussing the details of PRS analysis, but all design we discuss could be applied per locus in a GWAS. What we do adapt from **Warrington et al.** is an application where, given certain assumptions, we can estimate the direct and indirect effect of a PRS on an outcome if we abserve a parental PRS, the parental phenotype and the offspring phenotype but no offspring PRS. The design can also be applied when we observe parental and offspring PRS, and only offspring phenotype.
+In the context of GWAS a close cousin of this design has been applied to birthweight revealing specific maternal and offspring effects on birthweight (**Warrington et al., 2018**). Here we restrict ourself to discussing the details of PRS analysis, but all design we discuss could be applied per locus in a GWAS. What we do adapt from **Warrington et al.** is an application where, given certain assumptions, we can estimate the direct and indirect effect of a PRS on an outcome if we observe a parental PRS, the parental phenotype and the offspring phenotype but no offspring PRS. The design can also be applied when we observe parental and offspring PRS, and only offspring phenotype.
 
 
-The Warrington model requires 2 seperate regressions be performed:
+The Warrington model requires 2 separate regressions to be performed:
 
 
 $$phenotype_{child} = \beta_{offspring} * PRS_{mother} + e$$
@@ -293,7 +293,7 @@ warrington_t2_own <- summary(lm(child_t2 ~ child_prs))
 
 ``` 
 
-the direct effect and indirect effect are defined as:
+The direct effect and indirect effect are defined as:
 
 $$direct = beta_{own} - (2*\beta_{offspring} - \beta_{own})$$
 
@@ -316,7 +316,7 @@ indirect_warrington_t2 <-  (2*warrington_t2_off$coef[2,1] - warrington_t2_own$co
 
 #### Model used in Selzam et al.
 
-The design used in **Selzam et al. (2019)** relies on genotyped sibling pairs and involves regressing the difference in sibling phenotype on the mean sibling PRS (between family effect) and the per sibling deviance of the mean family effect (within family effect). The intuition is that in the absence of an indirect genetic effect, raising a person’s genetic liability by 1 risk allele increases the outcome by a fixed amount regardless of whether this person is compared to his or her sibling or to the general population, whereas an indirect (Parental) effect influences both siblings regardless of their genotype at the locus. 
+The design used in **Selzam et al.(2019)** relies on genotyped sibling pairs and involves regressing the difference in sibling phenotype on the mean sibling PRS (between-family effect) and the per-sibling deviance of the mean family effect (within-family effect). The intuition is that in the absence of an indirect genetic effect, raising a person’s genetic liability by 1 risk allele increases the outcome by a fixed amount regardless of whether this person is compared to his or her sibling or to the general population, whereas an indirect (parental) effect influences both siblings regardless of their genotype at the locus. 
 
 
 $$between = .5*(PRS_{child} + PRS_{sibling})$$
@@ -334,7 +334,7 @@ selzam_t1 <- summary(lm(child_t1 ~ between + within))
 selzam_t2 <- summary(lm(child_t2 ~ between + within))
 ``` 
 
-The estimated direct and indirect effect are:
+The estimated direct and indirect effects are:
 
 $$direct = \beta_{within}$$
 
@@ -359,11 +359,11 @@ indirect_selzam_t2 <- .75*(selzam_t2$coef[2,1]-selzam_t2$coef[3,1])
 
 #### Model used in Cheesman et al.
 
-The design used by **Cheesman et al. (2020)** relies on a comparison between PRS prediction between adoptees and biological offspring. The intuition is the following: In the presence of an indirect genetic effect after birth both adoptees and biological offspring are influenced by the parent that raises them. This induces a correlation between PRS of the rearing parent and either adopted or biological offspring of that parent, however since the PRS of adoptee and rearing parent are uncorrelated, a regression of the adoptee phenotype on the adoptee PRS gives us an unconfounded estimate of the direct effect. A regression of the phenotype of biological offspring on their PRS gives us an estimate that consists of the direct, and a part of the indirect genetic effect.  
+The design used by **Cheesman et al.(2020)** relies on a comparison between PRS prediction between adoptees and biological offspring. The intuition is the following: In the presence of an indirect genetic effect after birth both adoptees and biological offspring are influenced by the parent that raises them. This induces a correlation between PRS of the rearing parent and either adopted or biological offspring of that parent, however since the PRS of adoptee and rearing parent are uncorrelated, a regression of the adoptee phenotype on the adoptee PRS gives us an unconfounded estimate of the direct effect. A regression of the phenotype of biological offspring on their PRS gives us an estimate that consists of both the direct and a part of the indirect genetic effect.  
 
-$$phenotype_{adoptee} = beta_{adoptee} * PRS_{adoptee} + e$$
+$$phenotype_{adoptee} = \beta_{adoptee} * PRS_{adoptee} + e$$
 
-$$phenotype_{biological-child} = beta_{biological-child} * PRS_{biological-child} + e$$
+$$phenotype_{biological-child} = \beta_{biological-child} * PRS_{biological-child} + e$$
 
 
 ```{r}
@@ -386,7 +386,7 @@ direct_cheesman_t1 <- cheesman_t1_adopt$coef[2,1]
 direct_cheesman_t2 <- cheesman_t2_adopt$coef[2,1]
 ```
 
-$$indirect =  (beta_{biological-child} - \beta_{adoptee})$$
+$$indirect =  (\beta_{biological-child} - \beta_{adoptee})$$
 
 ```{r}
 indirect_cheesman_t1 <- cheesman_t1_bio$coef[2,1] - cheesman_t1_adopt$coef[2,1]
@@ -395,12 +395,12 @@ indirect_cheesman_t2 <- cheesman_t2_bio$coef[2,1] - cheesman_t2_adopt$coef[2,1]
 
 #### Model used in Domingue et al.
 
-A design used by **Domingue et al. (2020)** is a slight variation of the adoption design where the phenotype of adopted and biological offspring are regressed on that rearing parents genotype. This design again leverages the fact that parent and biological offspring have correlated PRS whereas parent and adoption offspring have uncorrelated PRS.  
+A design used by **Domingue et al.(2020)** is a slight variation of the adoption design where the phenotype of adopted and biological offspring are regressed on that rearing parents genotype. This design again leverages the fact that parent and biological offspring have correlated PRS whereas parent and adoption offspring have uncorrelated PRS.  
 
 
-$$phenotype_{adoptee} = beta_{adoption} * PRS_{rearing-parent} + e$$
+$$phenotype_{adoptee} = \beta_{adoption} * PRS_{rearing-parent} + e$$
 
-$$phenotype_{biological-child} = beta_{biological} * PRS_{rearing-parent} + e$$
+$$phenotype_{biological-child} = \beta_{biological} * PRS_{rearing-parent} + e$$
 
 ```{r}
 # perform adoption PRS analysis:
@@ -415,7 +415,7 @@ domingue_t2_bio_offs <- summary(lm(child_t2 ~ father_prs ))
 
 And the direct and indirect effects are defined as:
 
-$$direct =  2*(beta_{biological} - \beta_{adoption}) $$
+$$direct =  2*(\beta_{biological} - \beta_{adoption}) $$
 
 ```{r}
 direct_domingue_t1 <- 2*(domingue_t1_bio_offs$coef[2,1]-domingue_t1_adop_offs$coef[2,1])
@@ -436,7 +436,7 @@ indirect_domingue_t2 <- domingue_t2_adop_offs$coef[2,1]
 
 ### Review the results in the **absence** of an indirect effect.
 
-We cooelct all direct and indirect effect estimates, and the true effect as specified in the simulation, in a single object so we can esily compare the results.
+We collect all direct and indirect effect estimates, and the true effect as specified in the simulation, in a single object so we can easily compare the results.
 
 ```{r}
 direct_effects <- c(m.error*sqrt(.5),
@@ -462,14 +462,14 @@ indirect_effects <- c(0,
                     )
 ```
 
-Lets compare the results:
+Let's compare the results:
 
 ```{r}
 tab <-  cbind(round(direct_effects,3),
             round(indirect_effects,3))
 rownames(tab) <- c("Truth","Kong et al.","Conley et al.","Warrington et al.",
                    "Selzam et al.","Cheesman et al.","Domingue & Fletcher")
-  colnames(tab) <-  c("Direct effect", "Indirect Effect")
+  colnames(tab) <-  c("Direct effect", "Indirect effect")
 
 kable(tab)
 ```
@@ -478,7 +478,7 @@ kable(tab)
 
 ### Review the results in the **presence** of an indirect effect.
 
-We cooelct all direct and indirect effect estimates, and the true effect as specified in the simulation, in a single object so we can esily compare the results.
+We collect all direct and indirect effect estimates, and the true effect as specified in the simulation, in a single object so we can easily compare the results.
 
 ```{r}
 direct_effects <- c(m.error*sqrt(.5),
@@ -492,7 +492,7 @@ direct_effects <- c(m.error*sqrt(.5),
 ```
 
 
-Then I compute the indirect effects some authors are explicit about how this is done, others aren’t in which case I determined how to compute it myself:
+#Then I compute the indirect effects some authors are explicit about how this is done, others aren’t in which case I determined how to compute it myself:
 
 ```{r}
 indirect_effects <- c(m.error*sqrt(.1)*sqrt(.5),
@@ -505,7 +505,7 @@ indirect_effects <- c(m.error*sqrt(.1)*sqrt(.5),
                     )
 ```
 
-Lets compare the results:
+Let's compare the results:
 
 ```{r}
 tab <-  cbind(round(direct_effects,3),
@@ -523,7 +523,7 @@ kable(tab)
 ## Speculative variations, extensions and comparisons.
 
 
-The equivalence between the models discussed above can break down in interesting ways, ways that are informative about the developmental process. For example the adoption design as applied by **Cheeesman et al.** assumes the indirect effect plays out after birth, if there is a maternal influence on a child's outcome during pregnancy (as is the case for birth-weight for example) this indirect effect is not accounted for by the adoption design. This also means that in the presence of a prenatal effect, the results form the adoption and the other designs, will begin to diverge. This divergence could be used to detect the presence of prenatal indirect effects. It is likely these types of analyses could require rather large samples, and preferably the data for multiple designs be collected in a uniform fashion and in a single population to ensure any subtle differences population structure in measurement of genotype or phenotype doesn't confound the estimate of a prenatal indirect effect.
+The equivalence between the models discussed above can break down in interesting ways, ways that are informative about the developmental process. For example the adoption design as applied by **Cheeesman et al.** assumes the indirect effect plays out after birth: if there is a maternal influence on a child's outcome during pregnancy (as is the case for birthweight for example) this indirect effect is not accounted for by the adoption design. This also means that in the presence of a prenatal effect, the results from the adoption and the other designs, will begin to diverge. This divergence could be used to detect the presence of prenatal indirect effects. It is likely these types of analyses could require rather large samples, and preferably the data for multiple designs be collected in a uniform fashion and in a single population to ensure any subtle difference in population structure and in measurement of genotype or phenotype doesn't confound the estimate of a prenatal indirect effect.
 
 There are other variations on the adoption design one could consider, such as analysis of PRS effects on people reared by one biological and one adopted parent (in case of sperm or egg donation, or non-paternity), or people reared by one or two non-biological parent from a certain age onward (in case of rearing by stepparent(s)). Again this section is specifically for speculation, and numerous practical and theoretical issues would need to be considered. One of the mayor issue to consider (either when applying the adoption design, or when considering variations of it) is the sample selection that occurs when considering populations that differ in more ways then one, adoption, and the other processes that we discussed aren't random processes, and both adoptive parents, and adoptees may differ from the general population. This selection could influence results in unexpected ways. 
 
