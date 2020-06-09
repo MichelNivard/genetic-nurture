@@ -1,7 +1,7 @@
 ---
 title: "Genetic Nurture: statistical designs and practical estimation"
 author: "Perline Demange & Michel G Nivard"
-date: "Last compiled on `r format(Sys.time(), '%d %B, %Y')`"
+date: "`r format(Sys.time(), '%A %dth of  %B, %Y')`"
 output:
   html_document:  
     code_folding: show
